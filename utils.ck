@@ -1,4 +1,4 @@
-// all my utils functions yummy
+// all my utils functions 
 public class Utils
 {
     1024 => static int WINDOW_SIZE;
@@ -6,8 +6,6 @@ public class Utils
     // fft window
     Windowing.hann(WINDOW_SIZE) @=> static float window[];
 
-    // sample variables
-    static float samples[0];
 
     // map input samples to waveform 
     public static void map2waveform( float in[], float out[] )

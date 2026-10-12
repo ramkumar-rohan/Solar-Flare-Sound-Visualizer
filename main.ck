@@ -84,7 +84,7 @@ float amplitudes[WINDOW_SIZE];
 float spectrum[WINDOW_SIZE];
 
 // alll the audio processing
-fun void doAudio()
+fun void audioProcess()
 {
     while( true)
     {
@@ -262,7 +262,7 @@ fun void updateColors()
         Utils.convert_wave_length_nm_to_rgb(wavelength) => target_col;
     }
 
-    curr_col + 0.025 * (target_col - curr_col) => curr_col; //smooth out frequency changes by doing it like this
+    curr_col + 0.075 * (target_col - curr_col) => curr_col; //smooth out frequency changes by doing it like this
 
 
     sun_mat.uniformFloat3(0, 5 * curr_col); // set color to this color
@@ -270,7 +270,7 @@ fun void updateColors()
 }
 
 // audio and flare code in parallel
-spork ~ doAudio();
+spork ~ audioProcess();
 spork ~ flares();
 
 // main graphics loop
