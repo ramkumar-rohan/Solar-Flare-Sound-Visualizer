@@ -9,6 +9,7 @@
 
 // don't ask me how this section of code works, all i know is that it does works
 // animated perlin noise across the sun surface
+// https://gist.github.com/munrocket/236ed5ba7e409b8bdf1ff6eca5dcdc39
 // MIT License. © Stefan Gustavson, Munrocket
 //
 fn permute4(x: vec4f) -> vec4f { return ((x * 34. + 1.) * x) % vec4f(289.); }

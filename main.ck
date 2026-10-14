@@ -2,8 +2,8 @@
 @import "sound.ck"
 
 GWindow.fullscreen(); // make it fullscreen
-GWindow.mouseMode(2);
-//GOrbitCamera orbit_cam --> GG.scene(); // allow camera control of image
+GWindow.mouseMode(2); // turn off cursor
+//GOrbitCamera orbit_cam --> GG.scene(); // uncomment these lines to allow camera control of image with mouse
 //GG.scene().camera(orbit_cam);
 
 
@@ -49,7 +49,7 @@ Color.RED => vec3 curr_col;
 1024 => int WINDOW_SIZE;
 
 UGen input; // input to do all the stuff on
-1 => int input_source; // could make this controllable from keyboard input later
+1 => int input_source; // could make this controllable from keyboard input later, for now just change this to 0 for microphone input
 
 if (input_source == 0)
 {
