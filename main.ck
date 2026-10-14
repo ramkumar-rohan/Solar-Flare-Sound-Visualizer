@@ -1,7 +1,10 @@
 @import "utils.ck" // make my life easier by putting the big functions in another file
+@import "sound.ck"
+
 GWindow.fullscreen(); // make it fullscreen
-GOrbitCamera orbit_cam --> GG.scene(); // allow camera control of image
-GG.scene().camera(orbit_cam);
+GWindow.mouseMode(2);
+//GOrbitCamera orbit_cam --> GG.scene(); // allow camera control of image
+//GG.scene().camera(orbit_cam);
 
 
 
@@ -31,23 +34,22 @@ Shader sun_shader(shader_desc);
 Material sun_mat(sun_shader);
 
 // pass initial colors in the shader, will be updated
-sun_mat.uniformFloat3(0, 5 * Color.RED);
-sun_mat.uniformFloat3(1, 1 * Color.ORANGE); // this one doesn't change though, I haven't come up with a cool way to update it yet
+sun_mat.uniformFloat3(0, 1 * Color.RED);
+sun_mat.uniformFloat3(1, 0.5 * Color.ORANGE); // this one doesn't change though, I haven't come up with a cool way to update it yet
 GMesh sun(sun_geo, sun_mat);
 
 // load sun into scene
 sun --> GG.scene();
 
-
 // set initial color variable, this will be what continuously updates the colors
 Color.RED => vec3 curr_col;
+
 
 // fft window size
 1024 => int WINDOW_SIZE;
 
-UGen input;
-int input_source;
-0 => input_source; // could make this controllable from keyboard input later
+UGen input; // input to do all the stuff on
+1 => int input_source; // could make this controllable from keyboard input later
 
 if (input_source == 0)
 {
@@ -55,9 +57,39 @@ if (input_source == 0)
 }
 else if (input_source == 1)
 {
-    SinOsc sin => input; 0.1 => sin.gain;
+   
+    4 => int numInputs;
+    Osc inputs[numInputs];
+    Envelope envs[numInputs];
+
+    // create all the sin waves and chuck them to the same envelope
+    for (0 => int j; j < numInputs; j++)
+    {
+        SinOsc s => Envelope env => input;
+        s @=> inputs[j];
+        env @=> envs[j];
+    }
+
+    input => dac;
+   
+    // B major minor 7 chord
+    Std.mtof(59) => float f1; // b
+    Std.mtof(62) => float f2; // d
+    Std.mtof(66) => float f3; // f#
+    Std.mtof(70) => float f4; // a#
+    [f1, f2, f3, f4] @=> float chord1[];
+
+ 
+    // C major chord
+    Std.mtof(60) => f1; // middle c
+    Std.mtof(64) => f2; // e
+    Std.mtof(67) => f3; // g
+    Std.mtof(72) => f4; // c
+    [f1, f2, f3, f4] @=> float chord2[];
+
+
+    spork ~ SoundWalk.runSound(envs, inputs, chord1, chord2);
 }
-// maybe third option can play a custom thing
 
 //pass input into accumulator
 input => Flip accum => blackhole;
@@ -215,10 +247,28 @@ fun void genFlare()
 // make all the flares
 fun void flares()
 {
+    1 => float threshold;
     while (true)
     {
-        spork ~ genFlare(); // flares in parallel
-        1::second => now; // one flare every second
+        0 => float maxAmp;
+        for (0 => int i; i < WINDOW_SIZE; i++)
+        {
+            if (spectrum[i] > maxAmp)
+            {
+                spectrum[i] => maxAmp;
+            }
+        }
+
+        if (maxAmp > threshold)
+        {
+            spork ~ genFlare(); // flares in parallel
+            1::second => now; // give them a cooldown
+        }
+        else
+        {
+            50::ms => now; // otherwise try again in another 50ms
+        }
+
     }
 }
 
@@ -245,33 +295,52 @@ fun void updateColors()
    
     vec3 target_col;
     binToFreq(max_index) => float freq;
-    if (spectrum[max_index] < 1) // probably just noise from what i've tested
+    spectrum[max_index] => float power;
+    if (power < 1) // probably just noise from what i've tested
     {
         Utils.convert_wave_length_nm_to_rgb(750) => target_col; // this is red
     }
     else
     {
         // log scale between 80 and 2000 hz, seems pretty good from testing
-        Math.log(Math.max(freq, 80.0) - 80.0) / Math.log(2000.0 - 80.0) => float t;
-        1 - (Std.clampf(t, 0.0, 1.0)) => t; // bigger frequency means smaller wavelength so i reverse it
+        Utils.logscale(freq, 80, 2000) => float t;
         
-        // 400-750 is approximately visible light spectrum
-        400 + t * (750 - 400) => float wavelength;
+        // 400-750 is approximately visible light spectrum, higher freq = lower wavelength
+        750 + t * (400-750) => float wavelength;
         
         // funny function i found online and adapted to chuck
         Utils.convert_wave_length_nm_to_rgb(wavelength) => target_col;
     }
 
-    curr_col + 0.075 * (target_col - curr_col) => curr_col; //smooth out frequency changes by doing it like this
+    curr_col + 0.025 * (target_col - curr_col) => curr_col; //smooth out frequency changes by doing it like this
 
 
-    sun_mat.uniformFloat3(0, 5 * curr_col); // set color to this color
+    sun_mat.uniformFloat3(0, Math.max(0.5, power) * curr_col); // set color to this color
 
+}
+
+fun void animateCamera()
+{
+    0. => float t;
+    1. / 120. => float update;
+    115 => float duration; // length of sound sequence
+    while (true)
+    {
+        update::second => now;
+        update +=> t;
+        GG.camera().pos(@(7 * Math.cos(t/3), 0, 7 * Math.sin(t/3)));
+
+        GG.camera().fov((50 - Math.min(t, duration) / duration * 20) * pi / 180);
+
+        GG.camera().lookAt(sun.pos());
+    }
 }
 
 // audio and flare code in parallel
 spork ~ audioProcess();
 spork ~ flares();
+
+spork ~ animateCamera();
 
 // main graphics loop
 while (true)

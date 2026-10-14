@@ -98,6 +98,15 @@ public class Utils
 
 
        return result;
-    }    
+    }
 
+    public static float logscale(float input, float min, float max)
+    {
+        return Math.log(Math.min(Math.max(input, min), max - 1) - min + 1) / Math.log(max - min);
+    }
+
+    public static float reverse_logscale(float input, float min, float max)
+    {
+        return Math.pow(max - min, input) + min - 1; // just invert it
+    }
 }

@@ -1,13 +1,13 @@
 // shader code to draw the sun pattern
 #include FRAME_UNIFORMS
 #include DRAW_UNIFORMS
-// primary color
+// primary color, passed from main.ck
 @group(1) @binding(0) var<uniform> color1: vec3f;
 // secondary color
 @group(1) @binding(1) var<uniform> color2: vec3f;
 
 
-// don't ask me how the code here works, all i know is that it works
+// don't ask me how this section of code works, all i know is that it does works
 // animated perlin noise across the sun surface
 // MIT License. © Stefan Gustavson, Munrocket
 //
@@ -101,7 +101,7 @@ struct VertexOutput {
 @vertex
 fn vs_main(in : VertexInput) -> VertexOutput {
     var out : VertexOutput;
-    let hi = u_draw_instances[in.instance]; // idk why this works man, i never use this variable
+    let hihowareyoudoingtoday = u_draw_instances[in.instance]; // idk why this works man, i never use this variable
     out.position = u_frame.projection * u_frame.view * vec4f(in.position, 1.0);
     out.v_local = in.position;
     return out;
